@@ -52,6 +52,7 @@ func (e *Element) Set(child interface{}) {
 func (e *Element) Add(k string, child *Element) {
 	if e.lastKey != k {
 		if len(e.arr) > 0 {
+		        e.arr = append(e.arr, e.lastValue)
 			e.dict[e.lastKey] = e.arr
 			e.arr = make([]interface{}, 0)
 		} else if e.lastKey != "" {
