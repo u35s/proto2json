@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -52,7 +53,7 @@ func (e *Element) Set(child interface{}) {
 func (e *Element) Add(k string, child *Element) {
 	if e.lastKey != k {
 		if len(e.arr) > 0 {
-		        e.arr = append(e.arr, e.lastValue)
+			e.arr = append(e.arr, e.lastValue)
 			e.dict[e.lastKey] = e.arr
 			e.arr = make([]interface{}, 0)
 		} else if e.lastKey != "" {
@@ -177,11 +178,18 @@ func main() {
 	var template = "result:<top_entries:<id:EI_PINK col:2 index:1 start:1 len:1 > top_entries:<id:EI_SCATTER col:3 index:1 start:1 len:1 > top_entries:<id:EI_WILD col:4 index:1 start:1 len:1 > top_entries:<id:EI_RED col:5 index:1 start:1 len:1 > entries:<id:EI_Q col:1 index:2 start:2 len:1 > entries:<id:EI_SCATTER col:1 index:3 start:3 len:1 > entries:<id:EI_J col:1 index:4 start:4 len:1 > entries:<id:EI_J col:1 index:5 start:5 len:1 > entries:<id:EI_10 col:1 index:6 start:6 len:1 > entries:<id:EI_10 col:2 index:2 start:2 len:3 border:Silver > entries:<id:EI_PINK col:2 index:3 start:5 len:1 > entries:<id:EI_Q col:2 index:4 start:6 len:1 > entries:<id:EI_PURPLE col:3 index:2 start:2 len:4 border:Silver > entries:<id:EI_BLUE col:3 index:3 start:6 len:1 > entries:<id:EI_J col:4 index:2 start:2 len:3 > entries:<id:EI_BLUE col:4 index:3 start:5 len:2 > entries:<id:EI_SCATTER col:5 index:2 start:2 len:2 > entries:<id:EI_10 col:5 index:3 start:4 len:1 > entries:<id:EI_Q col:5 index:4 start:5 len:1 > entries:<id:EI_10 col:5 index:5 start:6 len:1 > entries:<id:EI_A col:6 index:2 start:2 len:1 > entries:<id:EI_J col:6 index:3 start:3 len:1 > entries:<id:EI_10 col:6 index:4 start:4 len:1 > entries:<id:EI_K col:6 index:5 start:5 len:1 > entries:<id:EI_GREEN col:6 index:6 start:6 len:1 > cat_rate:1 >"
 	var logWriter = &LogWriter{}
 
-	templateP := flag.String("t", template, "-t:set template value")
-	debugLogP := flag.Bool("d", false, "-d:active debug log")
+	templateP := flag.String("t", "", "set template value")
+	debugLogP := flag.Bool("d", false, "active debug log")
+	helpP := flag.Bool("h", false, "print this")
 	flag.Parse()
+	if *helpP == true {
+		flag.Usage()
+		os.Exit(0)
+	}
 
-	template = *templateP
+	if *templateP != "" {
+		template = *templateP
+	}
 	logWriter.Enable = *debugLogP
 
 	log.SetOutput(logWriter)
