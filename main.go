@@ -198,7 +198,7 @@ func (a *Args) Parse() {
 	flag.StringVar(&a.StrFile, "f", "proto.txt", "to parse file")
 	flag.StringVar(&a.ArrayKey, "a", "", "array key,split by ,")
 	flag.BoolVar(&a.WriteResult, "w", true, "write result to file")
-	flag.BoolVar(&a.Indent, "t", false, "json text format")
+	flag.BoolVar(&a.Indent, "t", true, "json text format")
 	flag.BoolVar(&a.Debug, "d", false, "active debug log")
 	flag.BoolVar(&a.Help, "h", false, "print this")
 	flag.Parse()
