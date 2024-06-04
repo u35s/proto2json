@@ -52,13 +52,7 @@ func (e *Element) Set(child interface{}) {
 
 func (e *Element) Add(k string, child *Element) {
 	if e.lastKey != k {
-		if len(e.arr) > 0 {
-			e.arr = append(e.arr, e.lastValue)
-			e.dict[e.lastKey] = e.arr
-			e.arr = make([]interface{}, 0)
-		} else if e.lastKey != "" {
-			e.dict[e.lastKey] = e.lastValue
-		}
+		e.flushLastValue()
 	}
 	if e.lastKey == k {
 		e.arr = append(e.arr, e.lastValue)
@@ -71,13 +65,28 @@ func (e *Element) MarshalJSON() ([]byte, error) {
 	if e.value != nil {
 		return json.Marshal(e.value)
 	}
+	e.flushLastValue()
+	return json.Marshal(e.dict)
+}
+
+func (e *Element) flushLastValue() {
+	if e.lastKey == "" {
+		return
+	}
 	if len(e.arr) > 0 {
 		e.arr = append(e.arr, e.lastValue)
 		e.dict[e.lastKey] = e.arr
+		e.arr = make([]interface{}, 0)
 	} else if e.lastKey != "" {
-		e.dict[e.lastKey] = e.lastValue
+		if _, ok := arrayKeyMap[e.lastKey]; ok {
+			e.arr = append(e.arr, e.lastValue)
+			e.dict[e.lastKey] = e.arr
+			e.arr = make([]interface{}, 0)
+		} else {
+			e.dict[e.lastKey] = e.lastValue
+		}
 	}
-	return json.Marshal(e.dict)
+	e.lastKey = ""
 }
 
 func parseValue(s string) interface{} {
@@ -155,6 +164,7 @@ func parseType(tpl string, start int) (string, int, int) {
 			if tpl[i+1] != '<' {
 				tp = EleTypeObjectKey
 			}
+			log.Printf("parse key,start:%v,end:%v,str:%v", start, i, tpl[start:i])
 			return tpl[start:i], tp, i
 		}
 
@@ -173,27 +183,51 @@ func parseType(tpl string, start int) (string, int, int) {
 	return "", -1, -1
 }
 
-func main() {
-	var res = NewEle()
-	var template = "result:<top_entries:<id:EI_PINK col:2 index:1 start:1 len:1 > top_entries:<id:EI_SCATTER col:3 index:1 start:1 len:1 > top_entries:<id:EI_WILD col:4 index:1 start:1 len:1 > top_entries:<id:EI_RED col:5 index:1 start:1 len:1 > entries:<id:EI_Q col:1 index:2 start:2 len:1 > entries:<id:EI_SCATTER col:1 index:3 start:3 len:1 > entries:<id:EI_J col:1 index:4 start:4 len:1 > entries:<id:EI_J col:1 index:5 start:5 len:1 > entries:<id:EI_10 col:1 index:6 start:6 len:1 > entries:<id:EI_10 col:2 index:2 start:2 len:3 border:Silver > entries:<id:EI_PINK col:2 index:3 start:5 len:1 > entries:<id:EI_Q col:2 index:4 start:6 len:1 > entries:<id:EI_PURPLE col:3 index:2 start:2 len:4 border:Silver > entries:<id:EI_BLUE col:3 index:3 start:6 len:1 > entries:<id:EI_J col:4 index:2 start:2 len:3 > entries:<id:EI_BLUE col:4 index:3 start:5 len:2 > entries:<id:EI_SCATTER col:5 index:2 start:2 len:2 > entries:<id:EI_10 col:5 index:3 start:4 len:1 > entries:<id:EI_Q col:5 index:4 start:5 len:1 > entries:<id:EI_10 col:5 index:5 start:6 len:1 > entries:<id:EI_A col:6 index:2 start:2 len:1 > entries:<id:EI_J col:6 index:3 start:3 len:1 > entries:<id:EI_10 col:6 index:4 start:4 len:1 > entries:<id:EI_K col:6 index:5 start:5 len:1 > entries:<id:EI_GREEN col:6 index:6 start:6 len:1 > cat_rate:1 >"
-	var logWriter = &LogWriter{}
+type Args struct {
+	Str      string
+	StrFile  string
+	Debug    bool
+	Help     bool
+	ArrayKey string
+}
 
-	templateP := flag.String("t", "", "set template value")
-	debugLogP := flag.Bool("d", false, "active debug log")
-	helpP := flag.Bool("h", false, "print this")
+func (a *Args) Parse() {
+	flag.StringVar(&a.Str, "s", "", "to parse value")
+	flag.StringVar(&a.StrFile, "f", "", "to parse file")
+	flag.StringVar(&a.ArrayKey, "a", "", "array key,split by ,")
+	flag.BoolVar(&a.Debug, "d", false, "active debug log")
+	flag.BoolVar(&a.Help, "h", false, "print this")
 	flag.Parse()
-	if *helpP == true {
+	if a.Help {
+		flag.Usage()
+		os.Exit(0)
+	}
+	if a.Str == "" {
 		flag.Usage()
 		os.Exit(0)
 	}
 
-	if *templateP != "" {
-		template = *templateP
+	if a.ArrayKey != "" {
+		strs := strings.Split(a.ArrayKey, ",")
+		for i := 0; i < len(strs); i++ {
+			arrayKeyMap[strs[i]] = true
+		}
+		fmt.Printf("array key %v\n", arrayKeyMap)
 	}
-	logWriter.Enable = *debugLogP
+}
+
+var arrayKeyMap = make(map[string]bool)
+
+func main() {
+	var res = NewEle()
+	var logWriter = &LogWriter{}
+
+	var args = &Args{}
+	args.Parse()
+	logWriter.Enable = args.Debug
 
 	log.SetOutput(logWriter)
-	parseEle(template, 0, res)
+	parseEle(args.Str, 0, res)
 	bts, err := json.Marshal(res)
 	if err == nil {
 		fmt.Println(string(bts))
