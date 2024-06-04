@@ -188,6 +188,7 @@ type Args struct {
 	StrFile     string
 	Debug       bool
 	WriteResult bool
+	Indent      bool
 	Help        bool
 	ArrayKey    string
 }
@@ -197,6 +198,7 @@ func (a *Args) Parse() {
 	flag.StringVar(&a.StrFile, "f", "proto.txt", "to parse file")
 	flag.StringVar(&a.ArrayKey, "a", "", "array key,split by ,")
 	flag.BoolVar(&a.WriteResult, "w", true, "write result to file")
+	flag.BoolVar(&a.Indent, "t", false, "json text format")
 	flag.BoolVar(&a.Debug, "d", false, "active debug log")
 	flag.BoolVar(&a.Help, "h", false, "print this")
 	flag.Parse()
@@ -239,7 +241,15 @@ func main() {
 
 	log.SetOutput(logWriter)
 	parseEle(args.Str, 0, res)
-	bts, err := json.Marshal(res)
+	var (
+		bts []byte
+		err error
+	)
+	if args.Indent {
+		bts, err = json.MarshalIndent(res, "", "\t")
+	} else {
+		bts, err = json.Marshal(res)
+	}
 	if err == nil {
 		fmt.Println(string(bts))
 		if args.WriteResult {
