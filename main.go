@@ -184,17 +184,19 @@ func parseType(tpl string, start int) (string, int, int) {
 }
 
 type Args struct {
-	Str      string
-	StrFile  string
-	Debug    bool
-	Help     bool
-	ArrayKey string
+	Str         string
+	StrFile     string
+	Debug       bool
+	WriteResult bool
+	Help        bool
+	ArrayKey    string
 }
 
 func (a *Args) Parse() {
 	flag.StringVar(&a.Str, "s", "", "to parse value")
-	flag.StringVar(&a.StrFile, "f", "", "to parse file")
+	flag.StringVar(&a.StrFile, "f", "proto.txt", "to parse file")
 	flag.StringVar(&a.ArrayKey, "a", "", "array key,split by ,")
+	flag.BoolVar(&a.WriteResult, "w", true, "write result to file")
 	flag.BoolVar(&a.Debug, "d", false, "active debug log")
 	flag.BoolVar(&a.Help, "h", false, "print this")
 	flag.Parse()
@@ -203,8 +205,17 @@ func (a *Args) Parse() {
 		os.Exit(0)
 	}
 	if a.Str == "" {
-		flag.Usage()
-		os.Exit(0)
+		bts, err := os.ReadFile(a.StrFile)
+		if err == nil && len(bts) > 0 {
+			a.Str = string(bts)
+		} else if err != nil {
+			if a.StrFile != "proto.txt" {
+				fmt.Printf("file %v not exists", a.StrFile)
+				os.Exit(0)
+			}
+			flag.Usage()
+			os.Exit(0)
+		}
 	}
 
 	if a.ArrayKey != "" {
@@ -231,5 +242,8 @@ func main() {
 	bts, err := json.Marshal(res)
 	if err == nil {
 		fmt.Println(string(bts))
+		if args.WriteResult {
+			os.WriteFile("json_"+args.StrFile, bts, 0644)
+		}
 	}
 }
